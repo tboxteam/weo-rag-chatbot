@@ -1,31 +1,80 @@
-# REPO: weo-rag-chatbot
-# FILE: README.md
-WEO RAG Chatbot — Student Starter (โครงพร้อมคอมเมนต์สอนจากศูนย์)
+# **WEO-RAG Chatbot Project**
 
-ภาพรวม (อ่านครั้งเดียวก่อนลงมือ)
-- โปรเจกต์นี้สาธิต RAG (Retrieval-Augmented Generation) แบบง่าย:
-  1) แยกข้อความจาก PDF (weo.pdf) → ทำ "เวกเตอร์" ด้วยโมเดลฝั่ง embeddings (Sentence-Transformers)
-  2) เก็บเวกเตอร์ไว้ใน Qdrant (Vector DB) เพื่อให้ค้นหา Top-K ได้เร็ว
-  3) เวลาใช้งาน: ค้นชิ้นความรู้ที่ใกล้คำถามที่สุด (Top-K) → ส่งเข้า LLM (gemma3:1b บน Ollama) ให้สรุปพร้อมอ้างอิงหน้า
-- ทุกไฟล์อยู่ root โฟลเดอร์ เพื่อให้นักเรียนที่เพิ่งเริ่มสามารถรันได้ง่าย
+นี่คือโปรเจกต์ Mini-Project (Module 7\) สำหรับสร้าง Chatbot ตอบคำถามจากเอกสาร World Economic Outlook (WEO) โดยใช้สถาปัตยกรรม RAG
 
-เริ่มต้นใช้งาน (สรุป)
-1) ติดตั้ง Python 3.10+  
-2) ติดตั้งไลบรารี: `pip install -r requirements.txt`  
-3) ติดตั้ง/เปิด Ollama และดึงโมเดล: `ollama pull gemma3:1b` แล้ว `ollama serve`  
-4) คัดลอก `.env.example` เป็น `.env` แล้วเติมค่าจริงของ Qdrant Cloud (URL, API Key)  
-5) วางไฟล์จริง `data/weo.pdf` (ผู้สอนจะให้ไฟล์นี้)  
-6) สร้างดัชนี: `python ingest.py`  
-7) ทดลองค้นคืน: `python retriever.py --q "What is Thailand's 2025 GDP growth?"`  
-8) ถามผ่านเอเจนต์ RAG: `python agent.py --q "Summarize key risks for Asian economy."`  
-9) UI ตัวอย่าง: `streamlit run app.py`
+## **Project Goal (เป้าหมาย)**
 
-หมายเหตุสำหรับผู้เรียน (เช็กพอยต์ที่ควรลองแก้)
-- TODO ในแต่ละไฟล์คือการบ้าน/จุดฝึก: ปรับ chunk size, ปรับ threshold, บังคับ citation, ฯลฯ
-- แนวคิดหลัก:
-  • Embedding = การแปลงข้อความเป็นตัวเลขหลายมิติ (เวกเตอร์) ให้คอมพิวเตอร์วัด "ความใกล้ความหมาย" ได้  
-  • Vector DB (Qdrant) = ฐานข้อมูลที่ออกแบบมาเพื่อค้นหาเวกเตอร์ Top-K เร็ว ๆ (เช่นใช้ HNSW)  
-  • Cosine Similarity = ค่าความใกล้เชิงมุม (ยิ่งมากยิ่งใกล้) ใช้คู่กับการ normalize เวกเตอร์  
-  • RAG = ดึงชิ้นความรู้จริงมากำกับ LLM เพื่อ "อ้างอิงได้" และลดการเดา
+(อ้างอิง Class 1, Slide 2\)
 
-Advanced (เลือกทำ): ใช้ Qdrant แบบ Local (Docker) แล้วแก้ `QDRANT_URL=http://localhost:6333`
+* สร้าง Chatbot ที่ตอบคำถามโดยอ้างอิงข้อมูลจาก WEO PDF  
+* ต้องแสดงหลักฐาน (Citations) เช่น หมายเลขหน้า  
+* ต้องปฏิเสธ (Refuse) ที่จะตอบคำถามนอกเหนือจากเนื้อหาในเอกสาร
+
+## **How to Run (วิธีรัน)**
+
+1. **Install Dependencies:**  
+   pip install \-r requirements.txt
+
+2. **Set Environment:**  
+   * Copy .env.example ไปเป็น .env  
+   * กรอก QDRANT\_URL และ QDRANT\_API\_KEY (จาก Qdrant Cloud)  
+   * (Optional) กรอก LANGCHAIN\_API\_KEY (จาก LangSmith)  
+3. Run Ollama:  
+   (ตรวจสอบให้แน่ใจว่า Ollama service รันอยู่ และได้ดึงโมเดลที่ต้องการแล้ว)  
+   ollama run llama3.1:8b 
+
+4. Ingest Data (Class 2):  
+   (ต้องทำครั้งแรก หรือเมื่อ PDF/Chunking strategy เปลี่ยน)  
+   python ingest.py
+
+5. **Run the App (Class 4):**  
+   streamlit run app.py
+
+## **Agent Policy (กฎของ Agent)**
+
+(อ้างอิง Class 3, Slide 24 / Class 5, Slide 14\)  
+นี่คือนโยบายที่เรา "บังคับ" Agent ผ่าน System Prompt
+
+### **1\. Tool Use Policy**
+
+* Agent จะใช้ weo\_retriever\_tool "เฉพาะ" คำถามที่เกี่ยวกับเศรษฐกิจ, GDP, WEO  
+* Agent จะใช้ calculator\_tool "เฉพาะ" การคำนวณ
+
+### **2\. Refusal Policy (Guardrail)**
+
+* Agent "ต้อง" ปฏิเสธ (Refuse) คำถาม Off-topic (เช่น อากาศ, กีฬา, "สวัสดี")  
+* Agent "ต้อง" ปฏิเสธ ถ้า weo\_retriever\_tool ค้นหาไม่เจอข้อมูล
+
+### **3\. Citation Policy**
+
+* คำตอบ "ทุกครั้ง" ที่มาจาก WEO "ต้อง" อ้างอิงแหล่งที่มา: \[Source: ..., Page: X\]
+
+## **Final Parameters (ค่าที่ใช้)**
+
+(นักเรียนต้องกรอกส่วนนี้หลังจูนระบบเสร็จ)
+
+* **Chunk Size:** ...  
+* **Chunk Overlap:** ...  
+* **Retriever K:** ...  
+* **Reranker:** (Y/N)  
+* **LLM Model:** ...  
+* **Embedding Model:** ...
+
+## **Metrics Table (Class 5\)**
+
+(อ้างอิง Class 5, Slide 11 & 20\)  
+(นักเรียนต้องรัน 10 Qs Bank และกรอกตารางนี้)
+
+| Query (คำถาม) | Answer (คำตอบย่อ) | Latency (sec) | Faithfulness (1/0) | Relevance (1/0) | Ctx Precision (X/k) |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+| (Q1: Fact-based) |  |  |  |  |  |
+| (Q2: Fact-based) |  |  |  |  |  |
+| (Q3: Synthesis) |  |  |  |  |  |
+| (Q4: Synthesis) |  |  |  |  |  |
+| (Q5: Table-based) |  |  |  |  |  |
+| (Q6: Table-based) |  |  |  |  |  |
+| (Q7: Edge Case) |  |  |  |  |  |
+| (Q8: Off-topic) |  |  |  |  |  |
+| (Q9: Off-topic) |  |  |  |  |  |
+| (Q10: Math) |  |  |  |  |  |
+
