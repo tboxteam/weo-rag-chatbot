@@ -1,12 +1,33 @@
-# REPO: weo-rag-chatbot
+# REPO: weo-rag-chatbot (student)
 # FILE: requirements.txt
-# ไลบรารีพื้นฐานที่ใช้ในโปรเจกต์ (ไม่ระบุเวอร์ชันเพื่อให้ติดตั้งง่ายสำหรับคลาส)
-streamlit
-pypdf
-qdrant-client
-sentence-transformers
-torch
-numpy
-tqdm
-ollama
+
+#### requires
+
+# (Class 1, Slide 24) Core LangChain Stack
+langchain
+langchain-community
+langchain-ollama
+langchainhub
 python-dotenv
+
+# (Class 2) VectorDB Client
+qdrant-client
+
+# (Class 2) PDF Loading
+pypdf
+
+# (Class 4, Slide 8) UI
+streamlit
+
+#### (Optional / Additions from user)
+
+# For alternative embeddings (e.g., HuggingFaceEmbeddings)
+sentence-transformers
+transformers
+torch
+
+# For progress bars (useful for ingest.py)
+tqdm
+
+# Common ML dependency
+numpy

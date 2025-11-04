@@ -1,8 +1,17 @@
 # REPO: weo-rag-chatbot
 # FILE: .gitignore
-__pycache__/
+
+pycache/
 *.pyc
-.env
+*.pyo
+*.pyd
+
 .venv/
-.ollama/
-.streamlit/
+venv/
+ENV/
+
+.env
+
+.vscode/
+.idea/
+*.DS_Store

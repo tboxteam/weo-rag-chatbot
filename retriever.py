@@ -1,74 +1,76 @@
-# REPO: weo-rag-chatbot
-# FILE: retriever.py
-# ==============================
-# บทบาทไฟล์นี้ (Retrieval)
-# - รับคำถาม (query) จากผู้ใช้
-# - แปลง query เป็นเวกเตอร์ด้วยโมเดลเดียวกับตอน ingest (ต้อง "ตรงกัน")
-# - เรียก Qdrant ให้คืน Top-K ชิ้นความรู้ที่ "ใกล้ความหมาย" สูงสุด
-# - (ทางเลือก) กรองด้วย SCORE_THRESHOLD เพื่อตัด noise ออก
-#
-# แนวคิด:
-# - "ใกล้" ในที่นี้หมายถึง "ใกล้เชิงความหมาย" วัดด้วย cosine similarity ของเวกเตอร์
-# - normalize_embeddings=True ทั้งตอน ingest/query เพื่อใช้ COSINE ได้ถูกต้อง
-# - TOP_K: ยิ่งมาก LLM ยิ่งมีบริบทเยอะ แต่ยาว/ช้าเกินไปก็ไม่ดี ต้องลองปรับ
-# ==============================
-
-import os, argparse
+import os
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_qdrant import Qdrant
 from qdrant_client import QdrantClient
 
-# โหลดคอนฟิกจาก .env
+# --- ค่าคงที่ (Constants) ---
+COLLECTION_NAME = "weo_april_2024" # ต้องเป็นชื่อเดียวกับใน ingest.py
+
+# --- โหลด Environment Variables ---
 load_dotenv()
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "WEO_RAG")
-EMB_MODEL_NAME = os.getenv("EMB_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-TOP_K = int(os.getenv("TOP_K", "5"))
-SCORE_THRESHOLD = float(os.getenv("SCORE_THRESHOLD", "0.20"))
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:1b")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-class Retriever:
-    def __init__(self):
-        # สร้างคลาสเชื่อม Qdrant และเตรียมโมเดลฝั่ง embedding
-        self.client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-        self.model = SentenceTransformer(EMB_MODEL_NAME)
+def get_retriever(k=5):
+    """
+    ฟังก์ชันสำหรับสร้าง Retriever (ตัวค้นหา) จาก Qdrant
+    (อ้างอิง Class 2, Slide 23 และ Class 3, Slide 14)
+    
+    Returns:
+        Langchain-compatible retriever object
+    """
+    
+    # 1. สร้าง Embedding Model (ต้องเป็นโมเดลเดียวกับตอน ingest)
+    embeddings = OllamaEmbeddings(
+        model=OLLAMA_MODEL,
+        base_url=OLLAMA_BASE_URL
+    )
+    
+    # 2. สร้าง Qdrant client เพื่อเชื่อมต่อ
+    # (เราใช้ client ที่เป็นทางการของ Qdrant)
+    client = QdrantClient(
+        url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
+    )
+    
+    # 3. สร้าง LangChain Qdrant wrapper
+    # (ตัวนี้จะใช้ client ข้างบนในการเชื่อมต่อ)
+    qdrant_store = Qdrant(
+        client=client,
+        collection_name=COLLECTION_NAME,
+        embeddings=embeddings,
+    )
+    
+    # 4. แปลง Vector Store ให้เป็น Retriever
+    # TODO: (Class 2/3) ให้นักเรียนสร้าง retriever
+    # โดยใช้ .as_retriever() และตั้งค่า 'k' (จำนวน chunk ที่จะดึง)
+    # retriever = qdrant_store.as_retriever(
+    #     search_type="similarity", # ค้นหาแบบ similarity
+    #     search_kwargs={'k': k}    # ดึง k ผลลัพธ์
+    # )
+    
+    # TODO: แก้ return None เป็น return retriever
+    return None 
 
-    def query(self, q: str, top_k: int = TOP_K):
-        # แปลงคำถามเป็นเวกเตอร์ (normalize ให้พร้อมใช้ COSINE)
-        qvec = self.model.encode([q], normalize_embeddings=True)[0]
-
-        # เรียกค้นหาใน Qdrant: คืนเอกสารที่ "คล้าย" มากที่สุดตามเวกเตอร์
-        res = self.client.search(
-            collection_name=QDRANT_COLLECTION,
-            query_vector=qvec.tolist(),
-            limit=top_k,
-            with_payload=True,  # ขอ payload (page/text) กลับมาด้วย
-        )
-
-        # แปลงผลลัพธ์ให้อ่านง่าย
-        hits = []
-        for p in res:
-            score = float(p.score)  # สำหรับ COSINE: "ยิ่งมากยิ่งใกล้"
-            # TODO: เปิดใช้ threshold เพื่อตัดผลที่ไม่เกี่ยวข้องมากพอ
-            # if score < SCORE_THRESHOLD:
-            #     continue
-            hits.append({
-                "score": score,
-                "page": p.payload.get("page"),
-                "text": p.payload.get("text", "")
-            })
-        return hits
-
+# --- ส่วนสำหรับทดสอบ (Test Block) ---
 if __name__ == "__main__":
-    # โหมดสั่งจาก command line เพื่อทดลองเร็ว ๆ
-    ap = argparse.ArgumentParser(description="ทดลองค้นจาก Qdrant ด้วยเวกเตอร์")
-    ap.add_argument("--q", required=True, help="ข้อความคำถาม/สิ่งที่อยากค้นหา")
-    args = ap.parse_args()
+    """
+    รันไฟล์นี้โดยตรง (python retriever.py) เพื่อทดสอบว่า Retriever ทำงานถูกต้องหรือไม่
+    """
+    print("กำลังทดสอบ Retriever...")
+    
+    # TODO: ให้นักเรียน uncomment 5 บรรทัดล่างนี้หลังจากทำ get_retriever เสร็จ
+    # test_retriever = get_retriever(k=3)
+    # query = "What is the GDP growth for Thailand?"
+    # results = test_retriever.invoke(query)
+    
+    # print(f"\n--- ผลการค้นหาสำหรับ: '{query}' ---")
+    # for i, doc in enumerate(results):
+    #     print(f"\n--- ผลลัพธ์ที่ {i+1} (Page {doc.metadata.get('page')}) ---")
+    #     print(doc.page_content[:500] + "...")
+    # print("---------------------------------")
+    pass
 
-    r = Retriever()
-    out = r.query(args.q)
-
-    # แสดงผลแบบย่อ: คะแนน + เลขหน้า + ตัวอย่างข้อความ
-    for i, h in enumerate(out, 1):
-        preview = h["text"].replace("\n", " ")[:120]
-        print(f"[{i}] score={h['score']:.3f} page={h['page']}  {preview}...")
