@@ -1,0 +1,12 @@
+# REPO: weo-rag-chatbot
+# FILE: requirements.txt
+# ไลบรารีพื้นฐานที่ใช้ในโปรเจกต์ (ไม่ระบุเวอร์ชันเพื่อให้ติดตั้งง่ายสำหรับคลาส)
+streamlit
+pypdf
+qdrant-client
+sentence-transformers
+torch
+numpy
+tqdm
+ollama
+python-dotenv

@@ -1,0 +1,7 @@
+# REPO: weo-rag-chatbot
+# FILE: questions.jsonl
+{"id": 1, "q": "What is the global growth forecast mentioned in the report?"}
+{"id": 2, "q": "List two key risks highlighted for Asia."}
+{"id": 3, "q": "What does the report say about inflation trend?"}
+{"id": 4, "q": "Which page mentions policy recommendations?"}
+{"id": 5, "q": "calculate: 5.5 * 3"}
