@@ -12,22 +12,36 @@
 
 ## **How to Run (วิธีรัน)**
 
-1. **Install Dependencies:**  
+**(อ้างอิง Class 1, Slide 23\)**
+
+1. Create Virtual Environment:  
+   (สร้างและ Activate venv เพื่อแยก environment ของโปรเจกต์)  
+   \# (Mac/Linux)  
+   python3 \-m venv venv  
+   source venv/bin/activate
+
+   \# (Windows)  
+   python \-m venv venv  
+   .\\venv\\Scripts\\activate
+
+2. **Install Dependencies:**  
    pip install \-r requirements.txt
 
-2. **Set Environment:**  
+3. **Set Environment:**  
    * Copy .env.example ไปเป็น .env  
    * กรอก QDRANT\_URL และ QDRANT\_API\_KEY (จาก Qdrant Cloud)  
+   * กรอก OLLAMA\_BASE\_URL (ปกติคือ http://localhost:11434) และ OLLAMA\_MODEL (เช่น gemma3:1b)  
    * (Optional) กรอก LANGCHAIN\_API\_KEY (จาก LangSmith)  
-3. Run Ollama:  
+4. Run Ollama:  
    (ตรวจสอบให้แน่ใจว่า Ollama service รันอยู่ และได้ดึงโมเดลที่ต้องการแล้ว)  
-   ollama run llama3.1:8b 
+   \# (ตัวอย่าง: gemma3:1b จาก Class 1, Slide 21\)  
+   ollama run gemma3:1b 
 
-4. Ingest Data (Class 2):  
+5. Ingest Data (Class 2):  
    (ต้องทำครั้งแรก หรือเมื่อ PDF/Chunking strategy เปลี่ยน)  
    python ingest.py
 
-5. **Run the App (Class 4):**  
+6. **Run the App (Class 4):**  
    streamlit run app.py
 
 ## **Agent Policy (กฎของ Agent)**
