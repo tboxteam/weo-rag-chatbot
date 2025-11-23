@@ -14,6 +14,9 @@
 
 **(อ้างอิง Class 1, Slide 23\)**
 
+0. Clone the repository
+   git clone https://github.com/tboxteam/weo-rag-chatbot.git
+
 1. Create Virtual Environment:  
    (สร้างและ Activate venv เพื่อแยก environment ของโปรเจกต์)  
    \# (Mac/Linux)  

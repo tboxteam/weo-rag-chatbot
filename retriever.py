@@ -1,76 +1,108 @@
 import os
 from dotenv import load_dotenv
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_qdrant import Qdrant
 from qdrant_client import QdrantClient
+# (แก้ไข 1) Import ให้ถูกต้องตาม ingest.py
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_qdrant import QdrantVectorStore
 
 # --- ค่าคงที่ (Constants) ---
-COLLECTION_NAME = "weo_april_2024" # ต้องเป็นชื่อเดียวกับใน ingest.py
+# (เราใช้ค่าเดียวกับ ingest.py)
+COLLECTION_NAME = "weo_april_2024"
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2" 
 
 # --- โหลด Environment Variables ---
-load_dotenv()
+load_dotenv() # โหลดค่าจากไฟล์ .env
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:1b")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-def get_retriever(k=5):
+# --- ค่าคงที่สำหรับ Retriever ---
+# (Class 2, Slide 12) เราจะดึง Top-K chunks ที่เกี่ยวข้อง
+# K = 3 หมายถึง ดึงมา 3 chunks ที่คะแนนดีที่สุด
+RETRIEVER_K = 3
+
+def get_retriever():
     """
-    ฟังก์ชันสำหรับสร้าง Retriever (ตัวค้นหา) จาก Qdrant
-    (อ้างอิง Class 2, Slide 23 และ Class 3, Slide 14)
+    ฟังก์ชันนี้ทำหน้าที่สร้างและ return "Retriever"
+    Retriever คือ object ที่ LangChain ใช้ในการ "ค้นหา" (Search)
+    ข้อมูลที่เกี่ยวข้องจาก Vector Database (Qdrant)
     
-    Returns:
-        Langchain-compatible retriever object
+    (อ้างอิง Class 2, Slide 12, 16, 21)
     """
     
-    # 1. สร้าง Embedding Model (ต้องเป็นโมเดลเดียวกับตอน ingest)
-    embeddings = OllamaEmbeddings(
-        model=OLLAMA_MODEL,
-        base_url=OLLAMA_BASE_URL
-    )
+    # 1. สร้าง Embedding Model (ต้องใช้ "ตัวเดียว" กับตอน ingest)
+    print(f"กำลังโหลด Embedding model: {EMBEDDING_MODEL_NAME}...")
+    # TODO: (Class 2) ให้นักเรียนสร้าง Embedding model
+    # (ต้องเป็น model เดียวกับ ingest.py)
+    # embeddings = HuggingFaceEmbeddings(
+    #     model_name=EMBEDDING_MODEL_NAME,
+    #     model_kwargs={'device': 'cpu'}
+    # )
+
+    # 2. สร้าง Qdrant Client (ตัวเชื่อมต่อ Qdrant)
+    # TODO: (Class 2) ให้นักเรียนสร้าง Qdrant Client
+    # client = QdrantClient(
+    #     url=QDRANT_URL,
+    #     api_key=QDRANT_API_KEY,
+    # )
+
+    # 3. สร้าง Qdrant Vector Store (ตัวจัดการ Collection)
+    # (แก้ไข 2) ใช้ QdrantVectorStore (ตัวใหม่)
+    # TODO: (Class 2) ให้นักเรียนสร้าง Qdrant Vector Store
+    # qdrant_store = QdrantVectorStore(
+    #     client=client,
+    #     collection_name=COLLECTION_NAME,
+    #     embedding=embeddings, 
+    # )
+
+    # 4. สร้าง Retriever
+    # .as_retriever() คือการแปลง Vector Store ให้เป็น "Retriever"
+    # ที่ LangChain (Agent) สามารถเรียกใช้ได้
+    # search_kwargs={"k": RETRIEVER_K} คือการบอกว่า "ฉันต้องการ Top-K"
     
-    # 2. สร้าง Qdrant client เพื่อเชื่อมต่อ
-    # (เราใช้ client ที่เป็นทางการของ Qdrant)
-    client = QdrantClient(
-        url=QDRANT_URL,
-        api_key=QDRANT_API_KEY,
-    )
-    
-    # 3. สร้าง LangChain Qdrant wrapper
-    # (ตัวนี้จะใช้ client ข้างบนในการเชื่อมต่อ)
-    qdrant_store = Qdrant(
-        client=client,
-        collection_name=COLLECTION_NAME,
-        embeddings=embeddings,
-    )
-    
-    # 4. แปลง Vector Store ให้เป็น Retriever
-    # TODO: (Class 2/3) ให้นักเรียนสร้าง retriever
-    # โดยใช้ .as_retriever() และตั้งค่า 'k' (จำนวน chunk ที่จะดึง)
+    # TODO: (Class 2/3) ให้นักเรียนสร้าง retriever จาก qdrant_store
     # retriever = qdrant_store.as_retriever(
-    #     search_type="similarity", # ค้นหาแบบ similarity
-    #     search_kwargs={'k': k}    # ดึง k ผลลัพธ์
+    #     search_kwargs={"k": RETRIEVER_K}
     # )
     
-    # TODO: แก้ return None เป็น return retriever
-    return None 
+    # (uncomment 2 บรรทัดล่างนี้ หลังจากทำ TODO ข้างบนเสร็จ)
+    # print("Retriever พร้อมใช้งาน")
+    # return retriever 
+    
+    # (สำหรับ Starter: คืนค่า None ก่อน)
+    return None
 
-# --- ส่วนสำหรับทดสอบ (Test Block) ---
+# --- ส่วนสำหรับทดสอบ Retriever (รันไฟล์นี้โดยตรง) ---
 if __name__ == "__main__":
     """
-    รันไฟล์นี้โดยตรง (python retriever.py) เพื่อทดสอบว่า Retriever ทำงานถูกต้องหรือไม่
+    นี่คือส่วนที่จะรันเมื่อเราสั่ง `python retriever.py`
+    เพื่อทดสอบว่า Retriever ทำงานถูกต้องหรือไม่
     """
-    print("กำลังทดสอบ Retriever...")
     
-    # TODO: ให้นักเรียน uncomment 5 บรรทัดล่างนี้หลังจากทำ get_retriever เสร็จ
-    # test_retriever = get_retriever(k=3)
-    # query = "What is the GDP growth for Thailand?"
-    # results = test_retriever.invoke(query)
-    
-    # print(f"\n--- ผลการค้นหาสำหรับ: '{query}' ---")
-    # for i, doc in enumerate(results):
-    #     print(f"\n--- ผลลัพธ์ที่ {i+1} (Page {doc.metadata.get('page')}) ---")
-    #     print(doc.page_content[:500] + "...")
-    # print("---------------------------------")
-    pass
+    # ตรวจสอบ .env
+    if not QDRANT_URL or not QDRANT_API_KEY:
+        print("Error: QDRANT_URL หรือ QDRANT_API_KEY ไม่ได้ถูกตั้งค่าใน .env")
+    else:
+        print("กำลังทดสอบ Retriever...")
+        
+        # TODO: (Class 2) ให้นักเรียน uncomment 2 บรรทัดล่าง
+        # หลังจากทำฟังก์ชัน get_retriever() เสร็จแล้ว
+        
+        test_retriever = get_retriever()
+        
+        # (เมื่อ uncomment แล้ว Error 'NoneType' object... จะหายไป)
+        if test_retriever:
+            query = "What is the GDP growth forecast for Thailand in 2025?"
+            print(f"กำลังค้นหาด้วยคำถาม: {query}\n")
+            
+            # .invoke() คือการสั่งให้ Retriever ทำงาน
+            results = test_retriever.invoke(query)
+            
+            print("\n--- ผลลัพธ์ (Contexts) ที่เกี่ยวข้อง ---")
+            for i, doc in enumerate(results):
+                print(f"\n--- Chunk {i+1} (Source: {doc.metadata.get('source')}, Page: {doc.metadata.get('page')}) ---")
+                print(doc.page_content)
+        else:
+            print("Retriever ยังไม่ถูกสร้าง (กรุณาทำ TODO ใน get_retriever)")
 
+        # (สำหรับ Starter: แสดง TODO)
+        print("กรุณาเข้าไปแก้ไขโค้ด `retriever.py` และ uncomment ส่วน `TODO`")

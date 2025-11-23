@@ -1,87 +1,101 @@
 import streamlit as st
-from langchain_core.messages import HumanMessage, AIMessage
+import time
 
-# Import agent executor ของเรา
-# (ไฟล์ agent.py ต้องมีฟังก์ชัน get_agent_executor() ที่สมบูรณ์)
-from agent import get_agent_executor
+# --- นี่คือส่วนที่สำคัญที่สุด ---
+# (Class 4) Import "สมอง" (Agent) ที่เราสร้างเสร็จแล้วจาก Class 3
+# เราจะ import 2 ฟังก์ชันที่เราสร้าง/ทดสอบไว้ใน agent.py
+from agent import get_agent_executor, run_agent
+# ------------------------------
 
-# === 1. ตั้งค่าหน้า Streamlit (Class 4, Slide 9) ===
-st.set_page_config(page_title="WEO Chatbot", layout="centered")
+# === 1. ตั้งค่าหน้าเว็บ (Page Config) ===
+st.set_page_config(
+    page_title="WEO RAG Chatbot",
+    page_icon="🤖",
+    layout="centered" 
+)
+
 st.title("WEO RAG Chatbot 🤖")
+st.caption("Chatbot ตอบคำถามจากเอกสาร WEO (April 2024) - พัฒนาโดย Gemini")
 
-# === 2. สร้าง Agent Executor ===
-# เราสร้าง Agent Executor เพียงครั้งเดียวและเก็บไว้ใน cache ของ Streamlit
-# เพื่อให้ไม่ต้องสร้างใหม่ทุกครั้งที่ User พิมพ์
+# === 2. โหลด Agent (ทำครั้งเดียว) ===
+# (Class 4, Slide 11)
+# @st.cache_resource คือ "เวทมนตร์" ของ Streamlit
+# ที่จะสั่งให้ฟังก์ชันนี้รันแค่ "ครั้งแรก" ที่เปิดแอป
+# เพื่อที่เราจะได้ไม่ต้องสร้าง Agent ใหม่ทุกครั้งที่ User พิมพ์
 @st.cache_resource
-def load_agent_executor():
-    """
-    โหลด Agent Executor และเก็บใน cache
-    """
-    return get_agent_executor()
-
-# TODO: (Class 4) ให้นักเรียน uncomment บรรทัดล่างนี้
-# (หลังจากที่ agent.py พร้อมใช้งานแล้ว)
-# agent_executor = load_agent_executor()
-
-# === 3. จัดการ Chat History (Class 4, Slide 10) ===
-
-# Streamlit จะ "รันใหม่ทั้งไฟล์" ทุกครั้งที่มีการโต้ตอบ
-# เราจึงต้องเก็บประวัติแชท (Chat History) ไว้ใน st.session_state
-if "messages" not in st.session_state:
-    st.session_state.messages = [] # (เก็บ {"role": "user", "content": "..."})
-
-# แสดงประวัติแชทที่ผ่านมา (Display chat messages)
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"]) # ใช้ markdown เพื่อให้ link/citation แสดงผลสวยงาม
-
-# === 4. รับ Input และเรียก Agent (Class 4, Slide 11) ===
-
-# รับ Input จาก User (ช่องพิมพ์จะอยู่ด้านล่าง)
-if prompt := st.chat_input("Ask about WEO..."):
+def load_agent():
+    # TODO: (Class 4) ให้นักเรียน uncomment บรรทัดล่าง
+    # """
+    # โหลด Agent (จาก agent.py) และเก็บไว้ใน Cache
+    # """
+    # print("--- (App) กำลังโหลด Agent... (รันแค่ครั้งเดียว) ---")
     
-    # 4.1. เพิ่มคำถาม User ไปยัง History และแสดงผล
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    # TODO: (Class 4) ให้นักเรียน uncomment บรรทัดล่าง
+    # เพื่อเรียกใช้ฟังก์ชันจาก agent.py
+    
+    # agent = get_agent_executor()
+    # return agent
+    return None # (ลบ/แก้ไข บรรทัดนี้)
 
-    # 4.2. เรียก Agent เพื่อประมวลผลคำตอบ
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            
-            # TODO: (Class 4) ให้นักเรียน uncomment ส่วนนี้
-            
-            # --- ส่วนแปลง History (สำคัญ!) ---
-            # Agent ของเรา (Class 3) รับ history ในรูปแบบ [HumanMessage, AIMessage]
-            # แต่ st.session_state เก็บเป็น [dict, dict]
-            # เราจึงต้องแปลงก่อนส่ง
-            # chat_history_for_agent = []
-            # for msg in st.session_state.messages[:-1]: # (เอาทุกอัน *ยกเว้น* คำถามล่าสุด)
-            #     if msg["role"] == "user":
-            #         chat_history_for_agent.append(HumanMessage(content=msg["content"]))
-            #     else:
-            #         chat_history_for_agent.append(AIMessage(content=msg["content"]))
-            # ---------------------------------
-            
-            # print(f"--- [App] Sending to agent: {prompt} ---")
-            # print(f"--- [App] History size: {len(chat_history_for_agent)} ---")
+# TODO: (Class 4) ให้นักเรียน uncomment บรรทัดล่าง
+# agent = load_agent()
 
-            # *** เรียก Agent ***
-            # response = agent_executor.invoke({
-            #     "input": prompt,
-            #     "chat_history": chat_history_for_agent
-            # })
-            
-            # response_text = response['output']
-            
-            # (ใส่ text จำลองไว้ก่อน จนกว่า TODO ข้างบนจะเสร็จ)
-            response_text = "TODO: Agent is not connected yet."
-            
-            st.markdown(response_text)
-            
-            # (สำคัญมาก!) ให้นักเรียนดูที่ "Terminal" ที่รัน streamlit
-            # ถ้า agent_executor มี verbose=True, เราจะเห็น "ความคิด" (ReAct loop) ของ Agent ที่นั่น
+# === 3. จัดการ Chat History (Session State) ===
+# (Class 4, Slide 10)
+# Streamlit จะรันไฟล์นี้ใหม่ "ทุกครั้ง" ที่ User ทำอะไรบางอย่าง
+# เราจึงต้องเก็บ "ประวัติการแชท" (messages) ไว้ใน st.session_state
+# เพื่อให้มัน "จำ" ได้ว่าคุยอะไรกันไปแล้วบ้าง
 
-    # 4.3. เพิ่มคำตอบของ Bot ไปยัง History
-    st.session_state.messages.append({"role": "assistant", "content": response_text})
+# TODO: (Class 4) ให้นักเรียน uncomment บรรทัดล่าง
+# if "messages" not in st.session_state:
+#     st.session_state.messages = []
 
+# === 4. แสดงผล Chat History ===
+# วนลูปเพื่อแสดง "ประวัติการแชท" ที่เก็บไว้
+# TODO: (Class 4) ให้นักเรียน uncomment 4 บรรทัดล่าง
+# for message in st.session_state.messages:
+#     with st.chat_message(message["role"]): # (role: "user" หรือ "assistant")
+#         st.markdown(message["content"])
+
+# === 5. รับ Input จาก User ===
+# (Class 4, Slide 9)
+# st.chat_input จะสร้าง "กล่องแชท" ไว้ที่ด้านล่างของจอ
+if prompt := st.chat_input("พิมพ์คำถามของคุณเกี่ยวกับ WEO ที่นี่..."):
+    
+    # TODO: (Class 4, Slide 11) ให้นักเรียน uncomment บล็อกข้างล่างทั้งหมด
+    # (นี่คือหัวใจของ Class 4)
+    
+    # --- 5.1 ตรวจสอบว่า Agent โหลดเสร็จหรือยัง ---
+    # if agent is None:
+    #     st.error("Agent ยังไม่ถูกโหลด! กรุณาทำ TODO ใน app.py ให้เสร็จ")
+    # else:
+    #     # --- 5.2 แสดงคำถามของ User บนจอ ---
+    #     st.session_state.messages.append({"role": "user", "content": prompt})
+    #     with st.chat_message("user"):
+    #         st.markdown(prompt)
+
+    #     # --- 5.3 เรียก Agent (จาก agent.py) ---
+    #     with st.chat_message("assistant"):
+    #         # "Spinner" จะแสดง animation "กำลังโหลด..."
+    #         with st.spinner("🤖 WEO Agent กำลังค้นหาและคิด..."):
+                
+    #             # (สำคัญ!) เราเรียกฟังก์ชัน 'run_agent' 
+    #             # ที่เราสร้าง/ทดสอบไว้ใน agent.py
+    #             # และตั้ง 'verbose=False' 
+    #             # (เพราะเราไม่ต้องการให้ log ของ Agent ไปปนกับ UI)
+                
+    #             response_dict = run_agent(agent, prompt, verbose=True)
+    #             response_text = response_dict['output']
+                
+    #             # (เพิ่มลูกเล่น) จำลองการพิมพ์
+    #             # time.sleep(1) 
+                
+    #             # แสดงคำตอบของ Bot
+    #             st.markdown(response_text)
+        
+    #     # --- 5.4 บันทึกคำตอบของ Bot ลง History ---
+    #     st.session_state.messages.append({"role": "assistant", "content": response_text})
+    
+    # (สำหรับ Starter: แสดง TODO)
+    st.error("กรุณาเข้าไปแก้ไขโค้ด `app.py` และ uncomment ส่วน `TODO`")
+    pass

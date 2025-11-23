@@ -5,10 +5,16 @@
 
 # (Class 1, Slide 24) Core LangChain Stack
 langchain
+langchain-core
 langchain-community
 langchain-ollama
+langchain-huggingface
+langchain_qdrant
+langchain-agents
 langchainhub
+langgraph
 python-dotenv
+
 
 # (Class 2) VectorDB Client
 qdrant-client
