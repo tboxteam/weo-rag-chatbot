@@ -10,7 +10,6 @@ langchain-community
 langchain-ollama
 langchain-huggingface
 langchain_qdrant
-langchain-agents
 langchainhub
 langgraph
 python-dotenv
